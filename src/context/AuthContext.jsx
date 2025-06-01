@@ -73,7 +73,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       setUser(data.user);
-      router.push('/portal/dashboard');
+      
+      // Force navigation after successful login
+      window.location.href = '/portal/dashboard';
       return data;
     } catch (error) {
       console.error('Login error:', error);
@@ -103,7 +105,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       setUser(data.user);
-      router.push('/portal/dashboard');
+      
+      // Force navigation after successful signup
+      window.location.href = '/portal/dashboard';
       return data;
     } catch (error) {
       console.error('Signup error:', error);
