@@ -1,107 +1,118 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext(undefined);
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'auth_user';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    const initAuth = async () => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const savedUser = localStorage.getItem(USER_KEY);
 
-  const checkAuth = async () => {
-    setLoading(true);
-    const token = localStorage.getItem('token');
+      if (token && savedUser) {
+        try {
+          const response = await fetch('/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
 
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/me', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, 
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[AuthContext] checkAuth: API error (non-200 status):', errorData.message || response.statusText);
-        setUser(null);
-        localStorage.removeItem('token'); 
-        localStorage.removeItem('user');
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user);
+          } else {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          handleLogout();
+        }
       } else {
-        const data = await response.json();
-        setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(null);
       }
-    } catch (error) {
-      console.error('[AuthContext] checkAuth: Error during API call or processing:', error);
-      setUser(null);
-      localStorage.removeItem('token'); 
-      localStorage.removeItem('user');
-    } finally {
       setLoading(false);
-    }
+    };
+
+    initAuth();
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
+    router.push('/login');
   };
 
   const login = async (email, password) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Login failed with status: ${response.status}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      setUser(data.user);
+      router.push('/portal/dashboard');
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    localStorage.setItem('token', data.token); 
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setUser(data.user);
   };
 
   const signup = async (userData) => {
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Signup failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Signup failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      setUser(data.user);
+      router.push('/portal/dashboard');
+      return data;
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    localStorage.setItem('token', data.token); 
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setUser(data.user);
   };
 
   const logout = () => {
-    localStorage.removeItem('token'); 
-    localStorage.removeItem('user');
-    setUser(null);
+    handleLogout();
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    loading,
+    login,
+    signup,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

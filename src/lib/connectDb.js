@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/apni-dukaan'
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/apni-dukaan';
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable');
+}
 
 let cached = global.mongoose;
 
@@ -16,18 +20,23 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('MongoDB connected successfully');
       return mongoose;
     });
   }
 
   try {
     cached.conn = await cached.promise;
-    console.log('mongodb connected succesffully')
   } catch (e) {
     cached.promise = null;
+    console.error('MongoDB connection error:', e);
     throw e;
   }
 
