@@ -16,16 +16,19 @@ const fetcher = async (url) => {
     },
   });
 
-  if (!res.ok) throw new Error('API request failed');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'API request failed');
+  }
   return res.json();
 };
 
 export const AppProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  const { data: products = [], error: productsError } = useSWR('/api/products', fetcher);
-  const { data: customers = [], error: customersError } = useSWR('/api/customers', fetcher);
-  const { data: sales = [], error: salesError } = useSWR('/api/sales', fetcher);
+  const { data: products = [], error: productsError, mutate: mutateProducts } = useSWR('/api/products', fetcher);
+  const { data: customers = [], error: customersError, mutate: mutateCustomers } = useSWR('/api/customers', fetcher);
+  const { data: sales = [], error: salesError, mutate: mutateSales } = useSWR('/api/sales', fetcher);
 
   const loading = !products || !customers || !sales;
 
@@ -39,11 +42,13 @@ export const AppProvider = ({ children }) => {
       .reduce((acc, s) => acc + s.total, 0),
   };
 
-  const refreshData = useCallback(() => {
-    mutate('/api/products');
-    mutate('/api/customers');
-    mutate('/api/sales');
-  }, []);
+  const refreshData = useCallback(async () => {
+    await Promise.all([
+      mutateProducts(),
+      mutateCustomers(),
+      mutateSales(),
+    ]);
+  }, [mutateProducts, mutateCustomers, mutateSales]);
 
   const addProduct = async (productData) => {
     try {
@@ -67,7 +72,7 @@ export const AppProvider = ({ children }) => {
         throw new Error(error.message || 'Failed to add product');
       }
 
-      refreshData();
+      await mutateProducts();
       return await res.json();
     } catch (error) {
       console.error('Error adding product:', error);
@@ -92,7 +97,7 @@ export const AppProvider = ({ children }) => {
         throw new Error(error.message || 'Failed to update product');
       }
 
-      refreshData();
+      await mutateProducts();
       return await res.json();
     } catch (error) {
       console.error('Error updating product:', error);
@@ -115,7 +120,7 @@ export const AppProvider = ({ children }) => {
         throw new Error(error.message || 'Failed to delete product');
       }
 
-      refreshData();
+      await mutateProducts();
       return await res.json();
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -123,7 +128,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Cart operations
   const addToCart = useCallback((product, quantity = 1) => {
     setCart(currentCart => {
       const existingItem = currentCart.find(item => item.id === product.id);
@@ -160,7 +164,7 @@ export const AppProvider = ({ children }) => {
   const checkout = async (customerPhone) => {
     try {
       const token = localStorage.getItem(TOKEN_KEY);
-      const res = await fetch('/api/sales', {
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,14 +172,7 @@ export const AppProvider = ({ children }) => {
         },
         body: JSON.stringify({
           customerPhone,
-          total: cart.reduce((sum, item) => sum + item.discountedPrice * item.cartQuantity, 0),
-          items: cart.map(item => ({
-            productId: item.id,
-            name: item.name,
-            barcode: item.barcode,
-            discountedPrice: item.discountedPrice,
-            cartQuantity: item.cartQuantity,
-          })),
+          cart,
         }),
       });
 
@@ -185,7 +182,12 @@ export const AppProvider = ({ children }) => {
       }
 
       clearCart();
-      refreshData();
+      await Promise.all([
+        mutateProducts(),
+        mutateCustomers(),
+        mutateSales(),
+      ]);
+      
       return await res.json();
     } catch (error) {
       console.error('Error during checkout:', error);

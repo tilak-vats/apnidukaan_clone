@@ -1,33 +1,40 @@
-// lib/auth.js
-// Make sure this file exists and contains the updated getUserIdFromRequest
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-// Make sure your JWT_SECRET is consistent across your application (client and server)
 const JWT_SECRET = process.env.JWT_SECRET || 'kst_apnidukaan';
 
 export async function getUserIdFromRequest(request) {
-  // Check for Authorization header first
-  const authHeader = request.headers.get('Authorization');
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null; // No token or invalid format
-  }
-
-  const token = authHeader.split(' ')[1]; // Extract the token part
-
-  if (!token) {
-    return null; // Token is empty after split
-  }
-
   try {
+    const authHeader = request.headers.get('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    if (!token) {
+      return null;
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded.id; // Return the user ID from the decoded token
+    return decoded.id;
   } catch (error) {
-    // console.error("JWT verification failed:", error.message); // For debugging
-    return null; // Token is invalid or expired
+    console.error('Auth error:', error.message);
+    return null;
   }
 }
 
-// You might also export JWT_SECRET_KEY if needed elsewhere
+export const verifyToken = async (token) => {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+};
+
+export const generateToken = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+};
+
 export const JWT_SECRET_KEY = JWT_SECRET;

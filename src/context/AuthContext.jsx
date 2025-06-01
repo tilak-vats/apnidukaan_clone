@@ -12,36 +12,37 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const initAuth = async () => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
       const token = localStorage.getItem(TOKEN_KEY);
       const savedUser = localStorage.getItem(USER_KEY);
 
       if (token && savedUser) {
-        try {
-          const response = await fetch('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-          if (response.ok) {
-            const data = await response.json();
-            setUser(data.user);
-          } else {
-            handleLogout();
-          }
-        } catch (error) {
-          console.error('Auth check failed:', error);
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        } else {
           handleLogout();
         }
       } else {
         setUser(null);
       }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      handleLogout();
+    } finally {
       setLoading(false);
-    };
-
-    initAuth();
-  }, [router]);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem(TOKEN_KEY);
@@ -110,6 +111,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     logout,
+    checkAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
