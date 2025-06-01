@@ -5,27 +5,27 @@ import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext'; 
 import LayoutComponent from '../components/layout/Layout'; 
 
-export default function ProtectedPortalLayout({ children }) { 
+export default function PortalLayout({ children }) { 
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace(`/login?redirect=${window.location.pathname}`);
+      router.replace('/login');
     }
   }, [user, loading, router]);
 
-  if (loading || !user) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <p className="text-xl text-gray-700">Loading application...</p>
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
       </div>
     );
   }
 
-  return (
-    <LayoutComponent>
-      {children}
-    </LayoutComponent>
-  );
+  if (!user) {
+    return null;
+  }
+
+  return <LayoutComponent>{children}</LayoutComponent>;
 }
