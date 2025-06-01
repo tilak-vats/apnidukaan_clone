@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  --primary: 99 102 241; /* Indigo */
+  --secondary: 14 165 233; /* Sky */
+  --accent: 249 115 22; /* Orange */
+  --success: 34 197 94; /* Green */
+  --warning: 234 179 8; /* Yellow */
+  --error: 239 68 68; /* Red */
+  --background: 255 255 255;
+  --foreground: 15 23 42;
+}
+
+@layer base {
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-500;
+  }
+
+  .btn-secondary {
+    @apply bg-sky-600 text-white hover:bg-sky-700 focus-visible:ring-sky-500;
+  }
+
+  .btn-outline {
+    @apply border border-slate-300 bg-white hover:bg-slate-100 text-slate-700;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-slate-100 text-slate-700;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500;
+  }
+
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-500;
+  }
+
+  .card {
+    @apply rounded-lg border border-slate-200 bg-white shadow-sm transition-all hover:shadow;
+  }
+
+  .input {
+    @apply rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+  }
+
+  .label {
+    @apply text-sm font-medium text-slate-700;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-indigo-100 text-indigo-800;
+  }
+
+  .badge-secondary {
+    @apply bg-sky-100 text-sky-800;
+  }
+
+  .badge-accent {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-error {
+    @apply bg-red-100 text-red-800;
+  }
+}
